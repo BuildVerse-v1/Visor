@@ -1,6 +1,7 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+dotenv.config();
 
-const config = {
+export const config = {
   server: {
     port: process.env.PORT || 3000,
     env: process.env.NODE_ENV || 'development'
@@ -16,15 +17,15 @@ const config = {
     apiKey: process.env.DEEPGRAM_API_KEY
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'fallback_default_visor_secret_key_change_in_prod',
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+    secret: process.env.ACCESS_TOKEN_SECRET || 'fallback_default_visor_secret_key_change_in_prod',
+    expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '24h'
   }
 };
 
 /**
  * Validate that critical environment configuration keys are set
  */
-function validateConfig() {
+export function validateConfig() {
   const missingKeys = [];
 
   if (!config.database.uri) {
@@ -44,8 +45,3 @@ function validateConfig() {
     console.log('[SUCCESS] Config verification completed. All core API keys loaded.');
   }
 }
-
-module.exports = {
-  config,
-  validateConfig
-};

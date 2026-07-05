@@ -1,10 +1,17 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const morgan = require('morgan');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const { config, validateConfig } = require('./config/config');
+import express from 'express';
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import passport from 'passport';
+import { fileURLToPath } from 'url';
+
+import { config, validateConfig } from './config/config.js';
+import './config/passport.js'; // Initialize Passport strategies
+import authRoutes from './routes/auth.routes.js';
 
 // Initialize server app
 const app = express();
@@ -15,15 +22,16 @@ validateConfig();
 // Security Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: '*', // Adjust to specific frontend URL in production
+  origin: process.env.CLIENT_URL || 'http://localhost:5173', // Must be exact origin for credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // Required for sending/receiving JWT cookies
 }));
 
 // Rate Limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+  max: 100, 
   message: {
     status: 'error',
     message: 'Too many requests from this IP, please try again after 15 minutes.'
@@ -35,6 +43,13 @@ app.use('/api/', apiLimiter);
 app.use(morgan('dev'));
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+app.use(cookieParser()); 
+
+// Initialize Passport
+app.use(passport.initialize());
+
+// Routes
+app.use('/api/v1/auth', authRoutes);
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
@@ -89,9 +104,8 @@ const startServer = async () => {
   });
 };
 
-// Run Server
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   startServer();
 }
 
-module.exports = { app, startServer };
+export { app, startServer };
