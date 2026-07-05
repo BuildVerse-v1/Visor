@@ -1,144 +1,134 @@
 # Visor: AI Interview Intelligence Platform
-## Architectural Blueprint & Planning Document (Building from Scratch)
+## Master Plan for Building from Scratch
 
-Visor is a stateful, RAG-enabled AI Mock Interview and Intelligence platform. Unlike simple AI wrappers, Visor extracts structured knowledge from a candidate's resume, indexes it semantically using vector embeddings, drives an adaptive multi-turn interview, evaluates performance across multiple dimensions, and provides customized study roadmaps.
-
----
-
-## 1. Technology Stack
-
-*   **Frontend**: React (Vite) + Tailwind CSS (curated harmonious color palette, sleek dark/glassmorphic components, and smooth Framer Motion micro-animations).
-*   **Backend**: Node.js + Express.js.
-*   **AI API**: MiniMax API (OpenAI-compatible SDK wrapper pointing to `https://api.minimax.io/v1`).
-    *   **Chat Completions Model**: `MiniMax-M3` (supports deep reasoning and thinking).
-    *   **Text Embeddings Model**: `embo-01`.
-*   **Audio STT**: Deepgram Nova-2 (captures filler words and speech markers for communication analysis).
-*   **Audio TTS**: Deepgram Aura-Asteria (text-to-speech synthesis for question playback).
-*   **Database**: MongoDB Atlas (fully online managed cloud instance).
-*   **Vector Search**: Local Node.js In-Memory Cosine Similarity Retriever for low-latency session-level queries.
+This planning document outlines the architecture, data models, API integrations, and step-by-step development roadmap to build **Visor** from a clean slate.
 
 ---
 
-## 2. Visor Project Structure (Target Directory Layout)
+## 1. Core Objectives & Scope
+
+Visor is a stateful RAG-enabled platform designed to assess, score, and guide candidates through mock interviews. The key features to build are:
+1.  **Resume Parsing & Structuring**: Converting uploaded PDFs into structured JSON profiles (skills, projects, experience).
+2.  **RAG Semantic Search**: Chunking resume text, generating embeddings using MiniMax, and retrieving context chunks matching the interview questions.
+3.  **Adaptive Interview Machine**: A state-machine loop that generates interview questions dynamically, adjusting the difficulty (1 to 5) and topic based on the candidate's previous performance.
+4.  **Multi-Dimensional Scorecard**: Detailed feedback along 5 axes (Technical Accuracy, Communication, Problem Solving, Confidence, and Consistency) with radar chart visuals.
+5.  **Personalized Learning Roadmaps**: Generating a customized study path (Markdown format) based on detected weaknesses.
+
+---
+
+## 2. Directory Layout & Bootstrapping
+
+We will organize the repository into a clean monorepo structure:
 
 ```text
 visor/
-├── backend/
+├── backend/                  # Node.js + Express API server
 │   ├── src/
-│   │   ├── config/
-│   │   │   ├── config.js              # Environment variables (MiniMax, Deepgram, MongoDB)
-│   │   │   └── firebaseadmin.js       # Firebase SDK config (optional for OAuth)
-│   │   ├── middleware/
-│   │   │   └── authMiddleware.js      # JWT & Firebase bearer token validation
-│   │   ├── models/
-│   │   │   ├── User.js                # Candidate profiles
-│   │   │   └── Interview.js           # Stateful interviews, structured resume, scorecards
-│   │   ├── routes/
-│   │   │   ├── authRoutes.js          # Authentication (login/register)
-│   │   │   ├── userRoutes.js          # User profile settings
-│   │   │   └── interviewRoutes.js     # Interview session management, audio uploads
-│   │   ├── services/
-│   │   │   ├── minimaxService.js      # MiniMax LLM completions & evaluations
-│   │   │   ├── ragService.js          # Chunking, embo-01 embeddings, local vector search
-│   │   │   ├── pdfService.js          # pdf-parse text extraction
-│   │   │   ├── deepgramService.js     # Speech-to-text (Nova-2)
-│   │   │   └── deepgramTTSService.js  # Text-to-speech (Aura-Asteria)
-│   │   ├── tests/
-│   │   │   ├── test-rag.js            # RAG pipeline test script
-│   │   │   └── test-adaptive.js       # Adaptive engine simulation
-│   │   └── server.js                  # App gateway & DB initialization
-│   ├── .env.example
-│   └── package.json
+│   │   ├── config/           # Database & API configuration keys
+│   │   ├── middleware/       # Authentication guards (JWT/Firebase)
+│   │   ├── models/           # Mongoose schemas (User, Interview, ResumeChunk)
+│   │   ├── routes/           # Express router endpoints
+│   │   ├── services/         # Business logic (MiniMax, RAG, Deepgram)
+│   │   └── server.js         # Entry point & DB connection
+│   ├── .env.example          # Template for environment configurations
+│   └── package.json          # Server dependencies
 │
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx             # Sleek navigation header
-│   │   │   ├── Footer.jsx             # Styled footers
-│   │   │   ├── ProtectedRoute.jsx     # Route guard
-│   │   │   └── RecordingBlob.jsx      # Voice recording wave animation
-│   │   ├── contexts/
-│   │   │   ├── AuthContext.jsx        # Auth state management
-│   │   │   └── ThemeContext.jsx       # Theme preferences (default dark)
-│   │   ├── pages/
-│   │   │   ├── LandingPage.jsx        # Hero page
-│   │   │   ├── Login.jsx              # Credentials portal
-│   │   │   ├── Register.jsx           # Sign up form
-│   │   │   ├── Interview.jsx          # Setup (role, company mode, starting difficulty)
-│   │   │   ├── InterviewSession.jsx   # Active interview dashboard & voice recorder
-│   │   │   └── MyInterviews.jsx       # List of past session evaluations & roadmaps
-│   │   ├── services/
-│   │   │   └── api.js                 # API handler mapping to backend endpoints
-│   │   ├── App.jsx                    # Routing configuration
-│   │   ├── index.css                  # Tailwinds directives and custom variables
-│   │   └── main.jsx                   # Entry point
-│   ├── tailwind.config.js
-│   ├── vite.config.js
-│   └── package.json
-└── README.md
+└── frontend/                 # React client (Vite + Tailwind CSS)
+    ├── src/
+    │   ├── components/       # Layouts, recorder widgets, custom charts
+    │   ├── contexts/         # Authentication and theme states
+    │   ├── pages/            # Core views (Landing, Auth, Setup, Active Session, Results)
+    │   ├── services/         # Axios wrapper and API functions
+    │   ├── App.jsx           # Client-side router configuration
+    │   ├── index.css         # Styling directives and custom color systems
+    │   └── main.jsx          # UI entry point
+    ├── tailwind.config.js
+    ├── vite.config.js
+    └── package.json
 ```
 
 ---
 
-## 3. Core Engine Mechanics
+## 3. Tech Stack Details
 
-### A. The RAG Pipeline
-1.  **Parsing & Structuring**: Raw text from PDF is passed to MiniMax with a strict schema prompt to extract a JSON containing:
-    *   `skills`: List of tools and programming languages.
-    *   `projects`: Titles, technologies, and action bullet points.
-    *   `experience`: Company names, roles, and achievements.
-2.  **Semantic Chunking**: The raw resume text is split into overlapping chunks (~200-400 characters).
-3.  **Embeddings**: Each chunk is passed to MiniMax `embo-01` to generate a vector. Chunks and vectors are saved under the `Interview` document as subdocuments or a linked collection.
-4.  **Retrieval**: Prior to generating a question, the active topic is embedded and compared against resume chunk vectors using Cosine Similarity. The top-K chunks are injected as prompt context.
-
-### B. The Stateful Adaptive Loop
-*   Each interview runs for 5–8 questions depending on the chosen **Company Mode**:
-    *   *Google Mode*: Hard technical depth, algorithmic tradeoffs.
-    *   *Startup Mode*: Pragmatic developer decisions, architectural scalability.
-    *   *HR Mode*: Behavioral scenarios, communication, conflict resolution.
-*   **Adaptive Flow**:
-    *   Starts at a chosen baseline difficulty (1–5 scale).
-    *   For a correct/accurate response (Score $\ge 8/10$), difficulty increases.
-    *   For a weak/inaccurate response (Score $\le 5/10$), difficulty decreases and the system focuses on validating fundamental concepts before pivoting.
-    *   Maintains memory of the last 3 QA turns to prevent circular questions.
-
-### C. Multi-Dimensional Scorecard & Learning Path
-Upon completion, the system executes a final synthesis prompt evaluating:
-1.  **Technical Knowledge**: Accuracy of architectural and algorithmic answers.
-2.  **Communication**: Sentence structure, clarity of speech, and filler word frequency.
-3.  **Problem Solving**: Critical thinking when challenged with harder follow-ups.
-4.  **Confidence**: Assertiveness and tone consistency (derived from audio analytics & speech pattern).
-5.  **Resume Consistency**: Cross-referencing answer details against claimed projects in the structured resume.
-
-It generates:
-*   A **Scorecard** with radar-chart compliant scores (1-10) for each axis.
-*   A **Learning Roadmap** formatted in Markdown detailing weak topics, step-by-step revision timelines, and links to official documentations/guides.
+*   **API & Backend**: Node.js, Express.js.
+*   **Database**: MongoDB Atlas (hosted cloud database).
+*   **AI SDK**: `openai` (Official SDK wrapper configured to talk to the MiniMax OpenAI-compatible endpoint).
+    *   **Base URL**: `https://api.minimax.io/v1`
+    *   **API Key Config**: `MINIMAX_API_KEY`
+    *   **Text/Chat Model**: `MiniMax-M3` (supports deep thinking/reasoning).
+    *   **Embeddings Model**: `embo-01`.
+*   **Speech Services**:
+    *   **Transcription (STT)**: Deepgram Nova-2 (configured to include filler words and structural paragraphs).
+    *   **Synthesis (TTS)**: Deepgram Aura-Asteria (text-to-speech for reading questions).
+*   **State Management**: React Context API for global states, Mongoose for backend session persistence.
 
 ---
 
-## 4. Phase-by-Phase Execution Plan
+## 4. Detailed Step-by-Step Milestones
 
-### Phase 1: Database Setup & Resume Structuring (Backend)
-*   Initialize node package files and connect to MongoDB Atlas.
-*   Define Mongoose model classes.
-*   Set up PDF parse service.
-*   Write MiniMax client wrapper mapping completions and `embo-01` embedding endpoints.
-*   Build `ragService.js` (chunking, embeddings cache, in-memory cosine similarity search).
+### Milestone 1: Environment & Server Setup (Backend Setup)
+*   **Goal**: Initialize a Node.js + Express backend with Mongoose connections and base security features.
+*   **Tasks**:
+    1.  Create `backend/package.json` and install core packages: `express`, `mongoose`, `cors`, `dotenv`, `multer`, `openai`, `pdf-parse`, `morgan`, `helmet`, `express-rate-limit`.
+    2.  Write `backend/src/config/config.js` to load env configurations (MongoDB URI, MiniMax Key, Deepgram Key).
+    3.  Create `backend/src/server.js` establishing the Express app, body parsers, CORS headers, rate limiters, and MongoDB connection hooks.
 
-### Phase 2: Adaptive Orchestrator (Backend API)
-*   Write the state machine tracking difficulty, active focus areas, and history logs.
-*   Integrate Deepgram Nova-2 (STT) and Aura-Asteria (TTS).
-*   Create interview start and progression endpoints (`POST /api/interview/start` and `POST /api/interview/:id/answer`).
+### Milestone 2: Resume Ingestion & RAG Engine (RAG Service)
+*   **Goal**: Extract raw PDF strings, parse structured data, chunk, and index for semantic retrieval.
+*   **Tasks**:
+    1.  Create `pdfService.js` using `pdf-parse` to convert file buffers into raw text strings.
+    2.  Create `minimaxService.js` initializing the OpenAI client wrapper with `https://api.minimax.io/v1`. Write a parser utility that calls `MiniMax-M3` requesting a rigid JSON output matching our resume schema.
+    3.  Create `ragService.js` to implement semantic paragraph chunking (e.g., 200–400 character paragraphs with overlaps).
+    4.  Implement `generateEmbeddings(chunks)` using MiniMax's `embo-01` endpoint to output vector arrays.
+    5.  Build an in-memory/local Cosine Similarity function that matches a query string embedding with stored resume chunks.
 
-### Phase 3: Visual Interface & Audio Workspace (Frontend)
-*   Bootstrap React + Vite + Tailwind application.
-*   Design custom auth wrappers (JWT/Firebase Auth).
-*   Implement Web MediaRecorder API to record high-fidelity voice responses and upload audio chunks.
-*   Build the interview configuration screen (Company Mode, baseline difficulty, resume parser trigger).
+### Milestone 3: Database Models & Router Endpoints
+*   **Goal**: Design persistence schemas for candidates and state-driven interview sessions.
+*   **Tasks**:
+    1.  Create `models/User.js` supporting standard register fields.
+    2.  Create `models/Interview.js` containing:
+        *   `structuredResume`: JSON object containing parsed Projects, Skills, Exp.
+        *   `resumeChunks`: Array of subdocuments containing chunk text and vector embeddings.
+        *   `questions`: Array containing question text, candidate transcript, and individual rating scorecard.
+        *   `currentState`: `{ difficulty: Number (1-5), topicIndex: Number, weakTopics: Array, consecutiveSuccess: Number }`
+        *   `scorecard`: Complete multi-metric evaluation scorecard.
+        *   `roadmap`: Markdown text study roadmap.
+    3.  Write `routes/interviewRoutes.js` establishing:
+        *   `POST /api/interview/start`: Receives uploaded PDF resume, runs the RAG ingestion pipeline, saves database document, and returns the first question.
+        *   `GET /api/interview/:id`: Retrieves full session history and evaluation scorecard.
 
-### Phase 4: Scorecards & Interactive Roadmaps (Fullstack)
-*   Implement final evaluation synthesis inside the backend.
-*   Build frontend dashboard pages with custom animated bars or SVG Radar graphs representing metrics.
-*   Render detailed markdown curriculum for custom study paths.
+### Milestone 4: Adaptive Conversation Loop & Speech APIs
+*   **Goal**: Implement the dynamic dialogue flow that escalates difficulty and integrates voice transcriptions.
+*   **Tasks**:
+    1.  Create `services/deepgramService.js` using the Deepgram Nova-2 API for low-latency speech-to-text.
+    2.  Create `services/deepgramTTSService.js` to synthesize generated questions into voice MP3 files.
+    3.  Write the adaptive logic inside `services/interviewService.js`:
+        *   Read the previous question's evaluation score.
+        *   If score $\ge 8/10$: Increase difficulty level (max 5) and progress topics.
+        *   If score $\le 5/10$: Decrease difficulty (min 1) and focus on fundamental concepts.
+        *   Embed the search query -> run local vector search on the current resume -> inject top context chunks into the prompt -> generate next question.
+    4.  Create `POST /api/interview/:id/answer`: Receives recorded audio file, transcribes it, scores it, triggers state machine, and returns next question (text + synthesized audio path) or redirects to completion.
+
+### Milestone 5: Scorecards & customized Learning Roadmaps
+*   **Goal**: Generate multi-dimensional feedback scorecards and revision plans.
+*   **Tasks**:
+    1.  Create the final evaluation prompt inside `minimaxService.js` to score the overall transcript across: Technical Knowledge, Communication, Problem Solving, Confidence, and Consistency.
+    2.  Implement weakness matching against the parsed resume profile to compile a custom **Learning Roadmap** (Markdown format) showing reading references, tutorial guides, and timelines.
+    3.  Hook this evaluation pipeline into `POST /api/interview/:id/answer` when the question count reaches the limit (e.g. 5 questions).
+
+### Milestone 6: Frontend Client Setup (Vite, Tailwind, routing)
+*   **Goal**: Bootstrap Vite application and design core page views.
+*   **Tasks**:
+    1.  Initialize Vite app: `npm create vite@latest frontend -- --template react`
+    2.  Install packages: `tailwindcss`, `postcss`, `autoprefixer`, `framer-motion`, `lucide-react`, `react-router-dom`.
+    3.  Configure Tailwind variables with a dark-mode palette.
+    4.  Write components: `Navbar`, `Footer`, `ProtectedRoute`.
+    5.  Build views: `LandingPage.jsx`, `Login.jsx`/`Register.jsx`, `Interview.jsx` (setup options screen).
+
+### Milestone 7: Voice Recorder & Evaluation Dashboard (Frontend UI)
+*   **Goal**: Build active audio recorder session page and final metrics dashboard.
+*   **Tasks**:
+    1.  Create the audio recording workspace in `InterviewSession.jsx` using Web MediaRecorder API. Include interactive wave visualizations, elapsed timers, and controls.
+    2.  Implement audio upload and next-question handlers.
+    3.  Design the final results page to display the scorecard values with custom CSS progress circles or SVGs and render the markdown-formatted Learning Roadmap.

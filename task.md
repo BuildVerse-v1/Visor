@@ -1,53 +1,61 @@
-# Visor: Phased Team Tasks Checklist (VISOR Workspace)
+# Visor: Development Checklist (Building from Scratch)
 
-This list details the engineering tasks required to build **Visor** from scratch in `c:\Users\Mukul\Desktop\VISOR`.
-
----
-
-## Phase 1: Ingestion & Resume Intelligence (Foundations)
-- [ ] **[AI Architect]** Create MiniMax API Integration Client
-  - Configure standard `openai` SDK connection with `baseURL: "https://api.minimax.io/v1"`.
-  - Set up `MINIMAX_API_KEY` and define default models (`MiniMax-M3` for chat, `embo-01` for embeddings).
-- [ ] **[Database Engineer]** Define MongoDB Schemas
-  - Create [Interview.js](file:///c:/Users/Mukul/Desktop/VISOR/backend/src/models/Interview.js) schema supporting `structuredResume`, `currentState`, and `scorecard` subdocuments.
-- [ ] **[RAG Engineer]** Implement Structuring & Embeddings Service
-  - Create [ragService.js](file:///c:/Users/Mukul/Desktop/VISOR/backend/src/services/ragService.js).
-  - Implement `structureResume(resumeText)` using MiniMax to extract JSON structure (Skills, Exp, Projects).
-  - Implement `chunkResume` (semantic paragraph parsing) and `generateEmbeddings`.
-- [ ] **[Backend Engineer]** Implement RAG Ingestion API
-  - Create [interviewRoutes.js](file:///c:/Users/Mukul/Desktop/VISOR/backend/src/routes/interviewRoutes.js) with `POST /start` to execute PDF text extraction, chunking, and embedding creation.
-- [ ] **[DevOps]** Run Ingestion Verification Test
-  - Create automated integration script `test-ingestion.js` in `backend/src/tests/` to verify PDF ingest is saved.
+Track your development progress through the scratch build milestones here.
 
 ---
 
-## Phase 2: State-Driven Adaptive Interview Loop
-- [ ] **[Product Manager]** Define Company Modes & Pacing Specifications
-  - Document behaviors and criteria for Google, Amazon, Startup CTO, and HR modes.
-- [ ] **[AI Architect]** Design Adaptive Question Prompts
-  - Build prompt templates in `minimaxService.js` that ingest RAG chunks + previous conversation history + difficulty context.
-- [ ] **[Backend Engineer]** Implement State Transition Logic
-  - Modify [interviewService.js](file:///c:/Users/Mukul/Desktop/VISOR/backend/src/services/interviewService.js) to track state (difficulty 1-5, topic index, consecutive correct responses).
-  - Update `POST /:interviewId/answer` to retrieve context chunks, calculate answer score, update state, and generate the next adapted question.
-- [ ] **[Frontend Engineer]** Build Interview Setup Configuration UI
-  - Create [Interview.jsx](file:///c:/Users/Mukul/Desktop/VISOR/frontend/src/pages/Interview.jsx) setup page with selectors for Company Mode and starting difficulty level.
+## Milestone 1: Environment & Server Setup (Backend Setup)
+- [ ] Initialize Node.js backend workspace in `backend/`
+  - Create package.json and install: `express`, `mongoose`, `cors`, `dotenv`, `multer`, `openai`, `pdf-parse`, `morgan`, `helmet`, `express-rate-limit`.
+- [ ] Create `src/config/config.js` to manage environments (MongoDB URI, MiniMax, Deepgram keys).
+- [ ] Create `src/server.js` with Express setups, middlewares, and MongoDB Atlas connection hooks.
+- [ ] Add `.env.example` with template keys.
 
 ---
 
-## Phase 3: Multi-Dimensional Evaluation Engine
-- [ ] **[AI Architect]** Implement Structured Scorecard Prompting
-  - Create a prompt that evaluates final transcript across 5 axes: Technical, Communication, Problem Solving, Confidence, and Consistency.
-- [ ] **[Backend Engineer]** Build Roadmap & Weakness Generator
-  - Extract weak topics from question logs and generate a structured Markdown Study Roadmap with resources.
-- [ ] **[Backend Engineer]** Complete Interview API Hook
-  - Update final question routing to trigger overall evaluation and save final scorecard to MongoDB.
+## Milestone 2: Resume Ingestion & RAG Engine (RAG Service)
+- [ ] Implement `src/services/pdfService.js` to parse PDF files into clean text strings.
+- [ ] Implement `src/services/minimaxService.js` to initialize OpenAI SDK connecting to MiniMax completions (`MiniMax-M3`).
+- [ ] Write MiniMax parser schema logic to extract structured JSON data from raw resume strings.
+- [ ] Create `src/services/ragService.js` implementing semantic chunking.
+- [ ] Integrate embedding generation (`embo-01`) and in-memory cosine similarity retrieval in `ragService.js`.
 
 ---
 
-## Phase 4: Frontend Scorecard Visualizer & UI Polish
-- [ ] **[Frontend Engineer]** Build Scorecard Visual Dashboard
-  - Redesign [InterviewSession.jsx](file:///c:/Users/Mukul/Desktop/VISOR/frontend/src/pages/InterviewSession.jsx) to render progress bars, scores, and recommendations.
-- [ ] **[Frontend Engineer]** Implement Interactive Study Roadmap
-  - Add tab in UI to show the generated Markdown Study roadmap.
-- [ ] **[Frontend Engineer]** Micro-animations & Aesthetics
-  - Integrate Framer Motion animations for active difficulty level and transition states.
+## Milestone 3: Database Models & Router Endpoints
+- [ ] Define Mongoose models:
+  - `src/models/User.js` (User registration).
+  - `src/models/Interview.js` (Structured resume JSON, chunk embeddings array, QA history array, state parameters).
+- [ ] Implement `src/routes/interviewRoutes.js` endpoints:
+  - `POST /api/interview/start`: Triggers PDF parsing, chunking, database ingestion, and returns first question.
+  - `GET /api/interview/:id`: Fetches complete session record and feedback dashboard data.
+
+---
+
+## Milestone 4: Adaptive Conversation Loop & Speech APIs
+- [ ] Implement `src/services/deepgramService.js` using Nova-2 for voice-to-text.
+- [ ] Implement `src/services/deepgramTTSService.js` using Aura-Asteria for text-to-voice.
+- [ ] Code the adaptive state machine in `src/services/interviewService.js` (difficulty level modifications based on answer scores, context injections).
+- [ ] Implement `POST /api/interview/:id/answer` to accept audio responses, transcribe, score, update state, and return follow-ups.
+
+---
+
+## Milestone 5: Scorecards & Customized Study Roadmaps
+- [ ] Write overall evaluation prompt inside `minimaxService.js` to score metrics (Technical Accuracy, Communication, Problem Solving, Confidence, Consistency).
+- [ ] Implement weakness roadmap compiling utility (generating study guides in Markdown).
+- [ ] Hook evaluation script to compile and complete the interview session on the final turn.
+
+---
+
+## Milestone 6: Frontend Client Setup (Vite, Tailwind, Routing)
+- [ ] Bootstrap Vite React application in `frontend/` folder.
+- [ ] Configure Tailwind with custom dark-themed visual values.
+- [ ] Implement basic routers (`App.jsx`) and route guard wrapper (`ProtectedRoute.jsx`).
+- [ ] Build views: `LandingPage.jsx`, `Login.jsx` / `Register.jsx`, `Interview.jsx` (setup settings page).
+
+---
+
+## Milestone 7: Voice Recorder & Evaluation Dashboard (Frontend UI)
+- [ ] Build `InterviewSession.jsx` incorporating Web MediaRecorder API recording logic and visual wave timers.
+- [ ] Integrate API methods for next question queries and speech uploading.
+- [ ] Design score metric visuals (custom bars/SVG charts) and render markdown study roadmaps in results panel.
